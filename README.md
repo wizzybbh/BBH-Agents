@@ -56,9 +56,10 @@ Each skill is a self-contained folder; each subagent is a single file. To wire
 them into Claude Code (Mac or VPS):
 
 ```bash
-git clone <this-repo> ~/bb-ai-agents
-cd ~/bb-ai-agents
-./install.sh          # symlinks skills → ~/.claude/skills, agents → ~/.claude/agents
+git clone https://github.com/wizzybbh/BBH-Agents ~/BBH-Agents
+cd ~/BBH-Agents
+./install.sh          # symlinks skills → ~/.claude/skills, agents → ~/.claude/agents,
+                      # and knowledge/ → ~/.claude/bb-knowledge
 ```
 
 `git pull` keeps everything current — symlinks mean no re-copying.

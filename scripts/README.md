@@ -60,5 +60,5 @@ Ensure `~/go/bin` is on your `PATH`. Add subfinder API keys
 
 ```cron
 # weekly re-run; new subdomains land in new_subs_<stamp>.txt (and takeover.txt)
-0 6 * * 1  cd ~/bb-ai-agents/scripts && ./recon-pipeline.sh -p acme --takeover >> ~/targets/acme/recon/cron.log 2>&1
+0 6 * * 1  cd ~/BBH-Agents/scripts && ./recon-pipeline.sh -p acme --takeover >> ~/targets/acme/recon/cron.log 2>&1
 ```
