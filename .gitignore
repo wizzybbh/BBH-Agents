@@ -1,0 +1,15 @@
+# Secrets & local config
+.env
+*.local
+
+# Per-target working data (recon output, notes, findings) — never commit
+targets/
+*.scope.txt
+loot/
+screenshots/
+
+# OS / editor cruft
+.DS_Store
+*.swp
+.idea/
+.vscode/
