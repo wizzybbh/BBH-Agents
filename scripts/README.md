@@ -53,7 +53,8 @@ go install github.com/PentestPad/subzy@latest              # moved from LukaSiki
 go install github.com/d3mondev/puredns/v2@latest
 go install github.com/owasp-amass/amass/v4/...@master      # or: sudo snap install amass
 pipx install dnsgen                                        # Python (permutations)
-sudo apt install -y massdns                                # REQUIRED for puredns/active mode
+# massdns — REQUIRED for puredns/active mode; build from source (not in apt):
+git clone https://github.com/blechschmidt/massdns && (cd massdns && make && sudo cp bin/massdns /usr/local/bin/)
 ```
 Ensure `~/go/bin` is on your `PATH`. Add subfinder API keys
 (`~/.config/subfinder/provider-config.yaml`) for much better passive coverage.
