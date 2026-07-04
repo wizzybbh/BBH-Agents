@@ -67,11 +67,24 @@ cd ~/BBH-Agents
 **Ad hoc / other assistants:** paste a skill's `SKILL.md` into any chat and say
 "save this as a skill." It works standalone.
 
+## Where it runs (two machines)
+
+- **VPS** (headless, always-on) — recon & file-heavy: `/scope`, `/recon`,
+  `/triage`, `recon-runner`, `url-miner`.
+- **Laptop** (where Caido + your browser are) — interactive testing: `/profile`,
+  `/hunt`, `/report`, `caido-reader`.
+
+Install the suite on **both** (`./install.sh` each). Handoff between them is the
+small text artifacts (`scope.txt`, triage shortlist, profile) — `scp` or paste.
+Caido runs on the laptop, so `caido-reader`/`hunt` belong there; to run them on
+the VPS instead, reverse-tunnel Caido: `ssh -R 8080:127.0.0.1:8080 <vps>`.
+
 ## Config
 
-Copy `.env.example` → `.env` (gitignored) and fill in your VPS host, Caido token,
-and HackerOne handle/User-Agent. Per-target working files live on the VPS at
-`~/targets/<program>/`.
+Copy `.env.example` → `.env` (gitignored) per machine. On the **VPS**: VPS host,
+`TESTING_USER_AGENT`, `GITHUB_TOKEN`, recon settings; leave Caido blank. On the
+**laptop**: the Caido values (`127.0.0.1:8080` is correct there). Per-target
+working files live on the VPS at `~/targets/<program>/`.
 
 ## Typical flow
 

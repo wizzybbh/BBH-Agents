@@ -11,8 +11,12 @@ query Caido's read API and read files. Authorized-testing context only.
 
 ## Access
 
-Caido exposes a plugin/GraphQL API on the local instance. Read connection details
-from the environment (`CAIDO_API_URL`, `CAIDO_API_TOKEN`). The MCP/bridge is
+Caido exposes a plugin/GraphQL API on the machine it runs on — usually the
+operator's **laptop**, so this agent (and `/hunt`) is best run there, where
+`127.0.0.1:8080` reaches Caido. If run on the VPS, Caido must be reverse-tunnelled
+from the laptop first (`ssh -R 8080:127.0.0.1:8080 <vps>`), else there is nothing
+to read — say so rather than inventing traffic. Read connection details from the
+environment (`CAIDO_API_URL`, `CAIDO_API_TOKEN`). The MCP/bridge is
 community-maintained, not first-party — if it isn't configured, say so and fall
 back to reading a Caido project export / saved requests the operator provides.
 Use only **read/query** operations. If an operation would send or replay a
