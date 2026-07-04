@@ -27,14 +27,24 @@ Announce each stage; on any tool being absent, say so and continue.
 
 **Preferred:** if the repo's `scripts/recon-pipeline.sh` is present, run it — it
 does the whole chain in one command, is passive by default, and uses `anew` to
-surface only NEW subdomains:
+surface only NEW subdomains. Run `scripts/recon-pipeline.sh --check` first to see
+installed tools.
+
+**Ask the operator two things before running:**
+1. **Passive or active DNS?** Active brute-force sends traffic — only offer it if
+   scope.txt allows active DNS. Default to passive.
+2. **If active:** ask for the **wordlist path** to use this run (e.g.
+   `~/wordlists/dns/best-dns.txt`), and optionally a resolvers file. Don't assume
+   a hardcoded list — the operator picks it per run. (If `RECON_WORDLIST` is set
+   in `.env` you may offer it as the default, but still confirm.)
+
+Then run:
 ```
-scripts/recon-pipeline.sh -p <slug>                      # passive
-scripts/recon-pipeline.sh -p <slug> --active --takeover  # only if program allows active DNS
+scripts/recon-pipeline.sh -p <slug>                          # passive
+scripts/recon-pipeline.sh -p <slug> -w <wordlist> [-r <resolvers>] --takeover   # active (implies brute)
 ```
-Run `scripts/recon-pipeline.sh --check` first to see installed tools. Only pass
-`--active` when scope.txt confirms active DNS brute-force is allowed. If the
-script isn't present, execute the stages below manually via `recon-runner`.
+`-w` overrides `.env` and turns on active mode. If the script isn't present,
+execute the stages below manually via `recon-runner`.
 
 For full per-stage depth (current tool commands, flags, wordlists), read the
 **recon-topics library** at `~/.claude/bb-knowledge/recon-topics/` (symlinked by

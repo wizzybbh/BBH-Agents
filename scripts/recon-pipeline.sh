@@ -14,7 +14,12 @@
 #   ./recon-pipeline.sh -l roots.txt                # many roots from a file
 #   ./recon-pipeline.sh -p acme                     # roots from scope.txt of program 'acme'
 #   ./recon-pipeline.sh example.com --active --screenshots --takeover
+#   ./recon-pipeline.sh -p acme -w ~/wl/dns.txt      # active brute w/ a per-run wordlist
 #   ./recon-pipeline.sh --check                     # just report which tools are installed
+#
+#   -w/--wordlist and -r/--resolvers override .env per run (RECON_WORDLIST /
+#   RECON_RESOLVERS). Passing -w turns on active mode. Leave the env blank and
+#   pass -w only when you want active DNS brute — /recon will ask you for it.
 #
 # Config via env or .env (see .env.example): VPS_TARGETS_DIR, TESTING_USER_AGENT,
 #   GITHUB_TOKEN, RECON_WORDLIST, RECON_RESOLVERS, RECON_RATE.
@@ -47,6 +52,8 @@ while [ $# -gt 0 ]; do
   case "$1" in
     -l|--list) ROOTS_FILE="$2"; shift 2;;
     -p|--program) PROGRAM="$2"; shift 2;;
+    -w|--wordlist) WORDLIST="$2"; ACTIVE=1; shift 2;;   # per-run override; implies --active
+    -r|--resolvers) RESOLVERS="$2"; shift 2;;
     --active) ACTIVE=1; shift;;
     --screenshots) SHOTS=1; shift;;
     --takeover) TAKEOVER=1; shift;;

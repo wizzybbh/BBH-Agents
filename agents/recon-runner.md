@@ -23,11 +23,12 @@ If `scripts/recon-pipeline.sh` exists in the repo, use it instead of hand-runnin
 each tool — it encodes this exact pipeline, is passive by default, respects the
 required UA and rate, and diffs new subdomains with `anew`:
 ```
-scripts/recon-pipeline.sh -p <slug>                       # passive
-scripts/recon-pipeline.sh -p <slug> --active --takeover   # only if active DNS is allowed
+scripts/recon-pipeline.sh -p <slug>                           # passive
+scripts/recon-pipeline.sh -p <slug> -w <wordlist> --takeover  # active brute (pass the wordlist the operator chose)
 ```
-Check tools first with `--check`. Pass `--active` ONLY when scope.txt permits
-active DNS brute-force. If the script is absent, run the stages below manually.
+Check tools first with `--check`. Do active DNS (`-w <wordlist>` or `--active`)
+ONLY when scope.txt permits it and the operator supplied the wordlist path — do
+not assume a default list. If the script is absent, run the stages below manually.
 
 ## Pipeline (adapt to installed tools; announce skips)
 
