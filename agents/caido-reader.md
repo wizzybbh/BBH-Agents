@@ -22,6 +22,22 @@ back to reading a Caido project export / saved requests the operator provides.
 Use only **read/query** operations. If an operation would send or replay a
 request, refuse and tell the caller to have the operator do it.
 
+`CAIDO_API_TOKEN` must be the PAT **only** — no `Bearer ` prefix and no spaces in
+`.env`, or it won't load. The client adds `Authorization: Bearer <token>` itself.
+
+### Verified GraphQL shapes (Caido local instance)
+
+- Active project: `{ currentProject { project { id name } readOnly } }`
+- Recent requests (Relay connection):
+  `{ requests(first: 50) { edges { node { id host method path query isTls port source createdAt } } } }`
+- `Request` fields: `id host method path query length port isTls sni fileExtension
+  source alteration edited createdAt raw response edits stream metadata browser`.
+- For a single request's raw bytes + its response, and for `scopes` /
+  `sitemapRootEntries` / `findings`, introspect exact subfields first
+  (`{ __type(name:"Request"){ fields { name } } }`) — the schema shifts between
+  Caido releases. To narrow to one host, filter the `requests` connection (HTTPQL
+  where supported) or filter client-side by `host`.
+
 ## Job
 
 For a given host (and optional path filter), return:

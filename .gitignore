@@ -1,6 +1,9 @@
 # Secrets & local config
 .env
+.env.*
+!.env.example
 *.local
+*.bak
 
 # Per-target working data (recon output, notes, findings) — never commit
 targets/
