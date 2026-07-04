@@ -13,29 +13,45 @@ Authorized-testing context only.
 
 Live-fetching H1/Bugcrowd does NOT work (login-gated + JS-rendered). Get inputs from:
 
-1. **Pasted POLICY text** — rules of engagement, test plans, reward tiers, CVSS, exclusions.
-2. **An exported scope CSV** — authoritative asset list. H1: program → Scope → "Export as CSV". Columns: `identifier, asset_type, instruction, eligible_for_bounty, eligible_for_submission, max_severity, ...`.
+1. **Pasted POLICY / brief text** — rules of engagement, test plans, reward tiers, CVSS/VRT, exclusions.
+2. **The authoritative asset list** — format depends on platform:
+   - **HackerOne** — program → Scope → "Export as CSV". Columns:
+     `identifier, asset_type, instruction, eligible_for_bounty,
+     eligible_for_submission, max_severity, …`.
+   - **Bugcrowd** — the brief's **Targets** table (In-Scope + Out-of-Scope
+     sections), usually pasted rather than a clean CSV. Each target has a
+     **category** (Website / API / Android / iOS / …), an in/out flag, and a
+     **VRT priority** ceiling instead of `max_severity`. The "Out of Scope" list
+     is authoritative excludes.
 
-The CSV may already be on the VPS — if the user names a path (e.g.
-`~/targets/<prog>/scope.csv`), read it directly with the file tools; don't ask
-them to paste it. If only one input exists, use it and note what's missing.
-**CSV = asset truth; policy = rules truth.** Never invent — missing → "not specified."
+Detect the platform from the input and parse accordingly. The CSV/brief may
+already be on the VPS — if the user names a path (`~/targets/<prog>/scope.csv`),
+read it directly; don't ask them to paste. If only one input exists, use it and
+note what's missing. **Asset list = asset truth; policy = rules truth.** Never
+invent — missing → "not specified."
 
-## 2. Parse the CSV (authoritative assets)
+## 2. Parse the asset list (authoritative)
 
-Per row:
-- **In scope** ⇔ `eligible_for_submission = true`; **Out** ⇔ `false`.
-- **Paid** ⇔ `eligible_for_bounty = true`. `submission=true` + `bounty=false` → **in scope, VDP-only (no money)** — label it.
-- Classify `asset_type`:
-  - `WILDCARD` / `identifier` starting `*.` → **RECON TARGET** (subdomain enum authorized).
-  - `URL` → **fixed web host** — test directly; do **NOT** enumerate its parent.
-  - `APPLE_STORE_APP_ID` / `GOOGLE_PLAY_APP_ID` → mobile app.
-  - `DOWNLOADABLE_EXECUTABLES` → desktop app.
-  - `OTHER` → misc/product/AI — read `instruction`.
-- Use `instruction` for test-plan pointers; `max_severity` for ceiling.
+Per row / target:
+- **In scope** ⇔ H1 `eligible_for_submission = true` (Bugcrowd: under In-Scope
+  Targets); **Out** ⇔ false / in the Out-of-Scope list.
+- **Paid** ⇔ H1 `eligible_for_bounty = true`. `submission=true` + `bounty=false`
+  → **in scope, VDP-only (no money)** — label ⊘.
+- Classify by type (H1 `asset_type` / Bugcrowd category):
+  - `WILDCARD` / identifier starting `*.` → **RECON TARGET** (subdomain enum authorized).
+  - `URL` / Website (single host) → **fixed web host** — test directly; do **NOT** enumerate its parent.
+  - `CIDR` / `IP_ADDRESS` → **IP-range recon target** — port/service scan the range (NOT subdomain enum). Watch shared cloud IPs.
+  - `API` → API host/base — fixed host; drive API testing (see `bug-classes/graphql.md`, `access-control-idor.md`).
+  - `APPLE_STORE_APP_ID` / `GOOGLE_PLAY_APP_ID` / `TESTFLIGHT` / Android / iOS → **mobile app**.
+  - `DOWNLOADABLE_EXECUTABLES` / `WINDOWS_APP_STORE_APP_ID` → **desktop app**.
+  - `SOURCE_CODE` → repo in scope — GitHub recon / code review (see `recon-topics/github-dorking.md`).
+  - `HARDWARE` / AI model / `OTHER` → misc — read `instruction`/brief.
+- Ceiling: H1 `max_severity` or Bugcrowd **VRT priority** (P1–P5) per target.
 
 **State loudly:** only **wildcard** assets authorize subdomain enumeration. A
-specific in-scope URL (`photoshop.adobe.com`) does NOT make `*.adobe.com` in scope.
+specific in-scope URL (`photoshop.adobe.com`) does NOT make `*.adobe.com` in
+scope. If only apex/URL hosts are listed (no wildcard), RECON TARGETS = "none" —
+do not enumerate a parent you weren't given.
 
 ## 3. Parse the policy (rules + rewards)
 
@@ -56,6 +72,9 @@ TESTING IP REQUIRED AT SUBMISSION: <yes/no>
 ### RECON TARGETS (wildcards -> enumerate subdomains)
 <*.example.com ...   or "none">
 
+### IP / CIDR RANGES (port/service recon; NOT subdomain enum)
+<1.2.3.0/24 ...   or "none">
+
 ### IN SCOPE — fixed web hosts (test directly, NO parent enum)   [⊘=no bounty]
 <host (TIER/ENV) ...>
 
@@ -70,7 +89,7 @@ mobile: <...>   desktop: <... (⊘ unless noted)>   AI: <...>
 automation: <posture>  | brute-force: <y/n> | DoS: <prohibited? auto-block?>
 envs: <prod/stage/local rules> | PII: <rule> | reporting: <one/report, PoC, UA>
 
-### REWARD TIERS
+### REWARD TIERS  (H1: severity/CVSS · Bugcrowd: VRT P1–P5)
 T1: <assets> -> <range>   T2: <assets> -> <range>   T3: <assets> -> <range>
 adjustments/caps: <...>
 
@@ -86,6 +105,12 @@ skip (excluded): <list>
 
 - Print the filled template in a code block.
 - Write it to `~/targets/<slug>/scope.txt` on the VPS (create the dir). Slug = program handle.
+- Keep the source `scope.csv` / brief alongside at `~/targets/<slug>/` for re-parsing.
+- **Format contract (the chain depends on it):** the RECON TARGETS block MUST list
+  wildcard roots as `*.domain` lines (space- or newline-separated).
+  `recon-pipeline.sh -p <slug>` and `/recon` parse *exactly* that block — anything
+  not matching `*.domain` there is ignored, and fixed hosts must stay OUT of it.
+  Get this right and `/scope → /recon` is one clean handoff.
 - `/recon` and `/triage` read this file to enforce scope.
 
 ## 6. Guardrails
