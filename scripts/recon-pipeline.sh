@@ -88,9 +88,11 @@ Install (most are Go tools):
   go install github.com/tomnomnom/waybackurls@latest
   go install github.com/gwen001/github-subdomains@latest
   go install github.com/sensepost/gowitness@latest
-  go install github.com/LukaSikic/subzy@latest
-  go install github.com/d3mondev/puredns/v2@latest        # needs `massdns` in PATH
-  apt install -y amass massdns   # or brew install amass massdns
+  go install github.com/PentestPad/subzy@latest            # (moved from LukaSikic/subzy)
+  go install github.com/d3mondev/puredns/v2@latest         # active DNS brute
+  go install github.com/owasp-amass/amass/v4/...@master    # or: snap install amass
+  pipx install dnsgen                                       # permutations (Python, not Go)
+  sudo apt install -y massdns   # REQUIRED for puredns/active mode  (or brew install massdns)
 Configure subfinder API keys for far better passive coverage:
   ~/.config/subfinder/provider-config.yaml
 EOF

@@ -49,9 +49,11 @@ go install github.com/lc/gau/v2/cmd/gau@latest
 go install github.com/tomnomnom/waybackurls@latest
 go install github.com/gwen001/github-subdomains@latest
 go install github.com/sensepost/gowitness@latest
-go install github.com/LukaSikic/subzy@latest
+go install github.com/PentestPad/subzy@latest              # moved from LukaSikic/subzy
 go install github.com/d3mondev/puredns/v2@latest
-sudo apt install -y amass massdns          # or: brew install amass massdns
+go install github.com/owasp-amass/amass/v4/...@master      # or: sudo snap install amass
+pipx install dnsgen                                        # Python (permutations)
+sudo apt install -y massdns                                # REQUIRED for puredns/active mode
 ```
 Ensure `~/go/bin` is on your `PATH`. Add subfinder API keys
 (`~/.config/subfinder/provider-config.yaml`) for much better passive coverage.
