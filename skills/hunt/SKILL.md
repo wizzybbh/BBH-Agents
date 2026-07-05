@@ -90,7 +90,10 @@ UA: <required user-agent>   accounts needed: <1 / 2 (A,B)>   OAST: <your collabo
 ## Guardrails
 
 - **NEVER send a request.** Output is copy-paste-into-Caido material. This is the
-  core promise of the suite (ADR 0002).
+  core promise of the suite (ADR 0002). If a Caido MCP (drift) is connected, you
+  MAY **stage** each test case into a Replay tab (`create_replay_session`) for the
+  operator to review and fire — but MUST NOT call `send_request`/`run_workflow` or
+  any transmit tool. Staging ≠ sending. See `docs/caido-mcp-setup.md`.
 - **Scope + severity + rules** — in-scope only; respect `max_severity`, required
   UA, rate posture; no brute-force/DoS where excluded.
 - **Non-destructive proofs** — boolean/time/OAST over data-changing payloads;

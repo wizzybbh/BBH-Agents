@@ -16,6 +16,21 @@ skill (`/hunt`) only *plans and suggests*.
 - **Consistency.** This preserves the existing `/scope` and `/triage` guardrail
   ("read & prioritize only — never send requests") rather than reversing it.
 
+## Staging is allowed; sending is not (Caido MCP, e.g. drift)
+
+When a Caido MCP is connected, the agent MAY use its **read** tools
+(`search_history`, `get_request`, `get_scope`/`check_scope`) and MAY **stage** a
+request into Caido Replay (`create_replay_session`) so the operator can review and
+fire it. The agent MUST NOT call any tool that transmits — `send_request`,
+`run_workflow`, etc. The operator presses **Send** in Caido.
+
+Enforce at the permission layer, not by prompt alone: **deny
+`mcp__drift__send_request`** (and `mcp__drift__run_workflow`). Verify that
+`create_replay_session` only stages (does not fire) before allowing it; if it
+fires, deny it too and have the agent hand over the request text for manual paste.
+Staging ≠ sending, so this preserves — does not weaken — "the human stays the
+trigger." See [caido-mcp-setup.md](../caido-mcp-setup.md).
+
 ## Consequences
 
 - "Caido integration" means **read + suggest**, not auto-replay. Reached via a
