@@ -1,64 +1,69 @@
 # Caido MCP setup — "agent stages, you send"
 
-Optional. Wires a Caido MCP into Claude Code so the agent can **read** your
-captured traffic and **stage** ready-to-fire requests into Caido Replay — while
-**you** press Send. Preserves [ADR 0002](adr/0002-human-stays-the-trigger.md):
-the agent never transmits attack traffic.
+Optional. Wires the **drift** Caido MCP into Claude Code so the agent can **read**
+your captured traffic and **stage** ready-to-fire requests into Caido Replay —
+while **you** press Send. Preserves [ADR 0002](adr/0002-human-stays-the-trigger.md):
+the transmit tools are never exposed to the agent.
 
 Runs on the **laptop** (where Caido is), for `/profile` and `/hunt`.
 
-## Recommended: drift (six2dez)
-
-Local-first, **no API token** (uses your active Caido session), 18 tools.
+## 1. Build & install the plugin
 
 ```bash
-# Prebuilt (easiest): download drift.zip from
-#   https://github.com/six2dez/drift/releases
-# Or build:
 git clone https://github.com/six2dez/drift ~/tools/drift && cd ~/tools/drift
-corepack enable && pnpm install && pnpm build      # → dist/drift.zip
+corepack enable && pnpm install && pnpm build
+```
+The artifact is **`dist/plugin_package.zip`** (not `drift.zip`, despite the README).
+In Caido: **Plugins → Install Package → select `~/tools/drift/dist/plugin_package.zip`**.
+Then open drift's page → **Start MCP server**.
 
-# In Caido:  Plugins → Install from file → drift.zip
-# In Caido:  drift Settings → Start MCP server (auto-registers with Claude Code)
-# Restart Claude Code; it now sees the drift tools.
+## 2. Register with Claude Code (manual — auto-register often misses)
+
+Drift's auto-registration frequently doesn't reach Claude Code (`claude mcp list`
+won't show it). Register it yourself. Find the server drift extracted:
+```bash
+find ~/Library/Application\ Support/io.caido.Caido/plugins -name mcp-server.mjs
+```
+Then add it, pulling the Caido token from `.env` (never type it inline). **Note
+`CAIDO_URL` is the base — drift appends `/graphql` itself:**
+```bash
+cd ~/Documents/"BB AI Agents" && set -a && . ./.env && set +a
+MJS="<path from the find above>"
+ALLOW="search_history,get_request,get_scope,check_scope,list_projects,select_project,get_current_context,clear_context_override,get_environment,intercept_status,list_findings,create_finding,create_replay_session"
+claude mcp add drift -s user \
+  -e CAIDO_URL=http://127.0.0.1:8080 \
+  -e CAIDO_TOKEN="$CAIDO_API_TOKEN" \
+  -e DRIFT_ALLOWED_TOOLS="$ALLOW" \
+  -- node "$MJS"
+claude mcp list | grep drift          # expect: ✔ Connected
 ```
 
-## The guardrail (required) — deny the send tools
+## 3. The guardrail — allowlist excludes every transmit tool
 
-The agent must be able to read/stage but **not** fire. Enforce it at the
-permission layer, not by trusting the prompt. In the laptop's Claude Code
-`settings.json`:
+`DRIFT_ALLOWED_TOOLS` is an **enforced allowlist** (drift's `getAvailableTools()`
+returns only these). The list above **omits** the tools that send traffic, so the
+agent can't call them — they aren't registered:
 
-```jsonc
-{
-  "permissions": {
-    "deny": [
-      "mcp__drift__send_request",     // fires HTTP via Replay — human only
-      "mcp__drift__run_workflow"       // can transmit — human only
-    ]
-  }
-}
-```
-
-**Verify `create_replay_session` before trusting it:** have the agent stage one
-benign, in-scope request and watch Caido. If it only creates a Replay tab → allow
-it (that's the staging you want). If it actually sends → also deny
-`mcp__drift__create_replay_session`, and the agent falls back to handing you the
-request text to paste into Replay yourself.
-
-## Tool posture
-
-| Allow (read/stage) | Deny (transmit — human only) |
+| Exposed (read / stage) | Withheld (transmit — human only) |
 |---|---|
-| `search_history`, `get_request` | `send_request` |
-| `get_scope`, `check_scope` | `run_workflow` |
-| `create_finding`, `list_findings` | `create_replay_session` *(until verified stage-only)* |
-| `list_projects`, `select_project`, `get_current_context` | `set_environment`, `intercept_pause`/`intercept_resume` |
+| `search_history`, `get_request` | **`send_request`** |
+| `get_scope`, `check_scope` | **`run_workflow`** |
+| `create_replay_session` (stage) | **`set_environment`** |
+| `create_finding`, `list_findings` | **`intercept_pause` / `intercept_resume`** |
+| `list_projects`, `select_project`, `get_current_context`, `get_environment`, `intercept_status` | |
 
-## Workflow with staging on
+Stronger than a Claude-Code permission-deny: the send tool doesn't exist for the
+agent. (You can still add `"deny": ["mcp__drift__send_request"]` to `settings.json`
+as belt-and-suspenders.)
 
-`/hunt` builds each cookie-swapped test case, stages it via
-`create_replay_session` into a Caido Replay tab, and tells you which tab to fire.
-You review the request, press **Send**, and read the response. Same discipline as
-before (one at a time, un-shared object for IDOR, halt on 3rd-party PII) — just
-without the manual copy-paste setup.
+**Verify staging once:** have the agent `create_replay_session` for one benign,
+in-scope request and watch Caido — a Replay tab should appear with **nothing
+sent**. If it fires, drop `create_replay_session` from the allowlist too and the
+agent falls back to handing you the request text.
+
+## 4. Restart & use
+
+Restart Claude Code so it loads the drift tools. Then `/hunt` builds each
+cookie-swapped case, stages it into a Replay tab, and tells you which to fire.
+You review, press **Send**, read the response. Same discipline as always
+(one at a time, un-shared object for IDOR, halt on 3rd-party PII).
