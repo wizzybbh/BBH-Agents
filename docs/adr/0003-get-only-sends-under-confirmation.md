@@ -1,5 +1,12 @@
 # Permit GET-only sends under mandatory confirmation (amends ADR 0002)
 
+> **Status: REVERTED — never operative in practice.** drift's `send_request` was
+> broken (bad mutation schema), and fixing `create_replay_session` (staging)
+> delivered the operator's "stage, I click Send" workflow *without any agent
+> send*. So `send_request` was removed from the drift allowlist and
+> [ADR 0002](0002-human-stays-the-trigger.md) never-send stands. This record is
+> kept for history; the decision below is **not in effect**.
+
 We soften [ADR 0002](0002-human-stays-the-trigger.md) at the operator's explicit
 request. The agent MAY call the Caido MCP's `send_request` to **replay a
 read-only GET request**, but only when gated by the operator's **per-call

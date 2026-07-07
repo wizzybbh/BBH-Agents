@@ -29,7 +29,7 @@ Then add it, pulling the Caido token from `.env` (never type it inline). **Note
 ```bash
 cd ~/Documents/"BB AI Agents" && set -a && . ./.env && set +a
 MJS="<path from the find above>"
-ALLOW="search_history,get_request,get_scope,check_scope,list_projects,select_project,get_current_context,clear_context_override,get_environment,intercept_status,list_findings,create_finding,create_replay_session,send_request"
+ALLOW="search_history,get_request,get_scope,check_scope,list_projects,select_project,get_current_context,clear_context_override,get_environment,intercept_status,list_findings,create_finding,create_replay_session"
 claude mcp add drift -s user \
   -e CAIDO_URL=http://127.0.0.1:8080 \
   -e CAIDO_TOKEN="$CAIDO_API_TOKEN" \
@@ -38,37 +38,35 @@ claude mcp add drift -s user \
 claude mcp list | grep drift          # expect: ✔ Connected
 ```
 
-## 3. The guardrail — allowlist + GET-only confirmation ([ADR 0003](adr/0003-get-only-sends-under-confirmation.md))
+## 3. The guardrail — allowlist excludes every transmit tool
 
 `DRIFT_ALLOWED_TOOLS` is an **enforced allowlist** (drift's `getAvailableTools()`
-returns only these). `send_request` is exposed **for GET-only reads under
-confirmation**; the other transmit tools are withheld entirely:
+returns only these). The list above **omits** every tool that sends traffic, so
+the agent can read and *stage* but can never fire:
 
-| Exposed (read / stage) | Exposed but confirmation-gated | Withheld (never exposed) |
-|---|---|---|
-| `search_history`, `get_request` | **`send_request`** — GET only, human-approved | `run_workflow` |
-| `get_scope`, `check_scope`, `create_replay_session` | | `set_environment` |
-| `create_finding`, `list_findings`, `list_projects`, `select_project`, `get_current_context`, `get_environment`, `intercept_status` | | `intercept_pause` / `intercept_resume` |
+| Exposed (read / stage) | Withheld (never exposed) |
+|---|---|
+| `search_history`, `get_request` | `send_request` |
+| `get_scope`, `check_scope` | `run_workflow` |
+| `create_replay_session` (stage a request into a Replay tab) | `set_environment` |
+| `create_finding`, `list_findings`, `list_projects`, `select_project`, `get_current_context`, `get_environment`, `intercept_status` | `intercept_pause` / `intercept_resume` |
 
-**Force the confirmation prompt** — add to the laptop `~/.claude/settings.json`
-so `send_request` always asks (and the transmit tools are denied as backup):
-```jsonc
-"permissions": {
-  "ask":  ["mcp__drift__send_request"],
-  "deny": ["mcp__drift__run_workflow", "mcp__drift__set_environment",
-           "mcp__drift__intercept_pause", "mcp__drift__intercept_resume"]
-}
-```
-Run the hunt session in a **prompting** mode (`claude --permission-mode default`),
-not `auto`/`bypass`, or the prompt can be skipped.
+Stronger than a permission-deny: the send tool isn't registered, so the agent
+literally cannot send ([ADR 0002](adr/0002-human-stays-the-trigger.md)). The agent
+**stages** cookie-swapped requests via `create_replay_session`; **you press Send**.
 
-**Method gate is human.** drift doesn't filter by HTTP method — the agent's
-charter restricts it to GET, but *you* must verify the method at the confirmation
-prompt and **decline anything that isn't a GET** (writes are fired by hand).
+### Known drift bug (patched locally)
 
-**Verify once:** have the agent `send_request` a benign in-scope GET. You MUST see
-a confirm prompt before anything goes out. If it fires with no prompt → you're in
-auto mode; stop and fix it before any real testing.
+Out of the box, drift's `create_replay_session` and `send_request` fail against
+current Caido — the mutation omits the required `kind: HTTP` and mis-shapes the
+`requestSource` oneof (`Oneof input objects require exactly one field` /
+missing-`kind` errors). Fix applied to
+`~/tools/drift/packages/backend/assets/mcp-server.mjs` (and the installed copy):
+send `kind: "HTTP"` and build `requestSource` as either `{ id }` **or**
+`{ raw: { connectionInfo: {host,port,isTLS}, raw: <base64> } }`. The patched
+`create_replay_session` also accepts `raw`+`host`, so the agent can stage a
+**modified** (cookie-swapped) request without sending. Run `pnpm build` to bake it
+in; worth filing upstream to six2dez.
 
 ## 4. Restart & use
 

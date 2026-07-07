@@ -1,8 +1,9 @@
 # The AI never fires attack traffic — the human stays the trigger
 
-> **Amended by [ADR 0003](0003-get-only-sends-under-confirmation.md):** the agent
-> may replay **read-only GET** requests under the operator's per-call
-> confirmation. Everything below still holds for all state-changing traffic.
+> **Note:** [ADR 0003](0003-get-only-sends-under-confirmation.md) briefly amended
+> this to permit GET-only sends, then was **reverted** — Caido MCP *staging*
+> (`create_replay_session`) gives the operator's "stage, I click Send" workflow
+> with no agent send at all, so this never-send rule stands in full.
 
 Across the whole suite, no skill or subagent sends attack traffic at a live
 target. The AI reads captured traffic (e.g. from Caido), analyzes it, and hands
