@@ -1,14 +1,16 @@
 ---
 name: hunt
-description: Build a per-bug-class test plan for one target from its profile and its Caido traffic — exact payloads and modified requests the operator fires manually. Use when the user runs /hunt, wants concrete payloads for a target/bug class, or shares Caido traffic to attack. The AI never sends requests.
+description: Build a per-bug-class test plan for one target from its profile and its Caido traffic — exact payloads and modified requests. Use when the user runs /hunt, wants concrete payloads for a target/bug class, or shares Caido traffic to attack. The AI may replay read-only GET requests only under the operator's per-call confirmation; every state-changing request is fired by the operator.
 ---
 
 # /hunt — Target + Caido traffic → payloads you fire yourself
 
 The "pentester brain." Given a **Target**, its `/profile`, and its captured
-**Caido traffic**, produce concrete, ready-to-fire test cases for the operator to
-execute in Caido Replay. **Per ADR 0002, this skill never sends any request** —
-it reads and hands you the exact thing to send. Authorized-testing only.
+**Caido traffic**, produce concrete, ready-to-fire test cases. **Per ADR 0002 as amended by ADR
+0003:** this skill sends nothing that changes state. It MAY replay a **read-only
+GET** request via the Caido MCP *only when gated by the operator's per-call
+confirmation prompt*; every other request (POST/PUT/PATCH/DELETE, and anything you
+are unsure about) it hands the operator to fire in Caido Replay. Authorized-testing only.
 
 ## Inputs
 
@@ -72,8 +74,8 @@ the loaded playbook — don't rely on memory for current bypasses.
 ## SETUP
 UA: <required user-agent>   accounts needed: <1 / 2 (A,B)>   OAST: <your collaborator host>
 
-## TEST CASES  (fire in Caido Replay — do NOT let the AI send)
-1. <class> @ <METHOD path>
+## TEST CASES  (GET reads: agent may send under your confirmation · writes: you fire in Caido Replay)
+1. <class> @ <METHOD path>   [mark: GET=confirm-send · non-GET=operator-fires]
    base (captured): <the real request line + key headers/params>
    change: <exact param/header/body edit + payload>
    positive result: <what proves it>
@@ -89,11 +91,14 @@ UA: <required user-agent>   accounts needed: <1 / 2 (A,B)>   OAST: <your collabo
 
 ## Guardrails
 
-- **NEVER send a request.** Output is copy-paste-into-Caido material. This is the
-  core promise of the suite (ADR 0002). If a Caido MCP (drift) is connected, you
-  MAY **stage** each test case into a Replay tab (`create_replay_session`) for the
-  operator to review and fire — but MUST NOT call `send_request`/`run_workflow` or
-  any transmit tool. Staging ≠ sending. See `docs/caido-mcp-setup.md`.
+- **Sends are GET-only and confirmation-gated** (ADR 0002 as amended by ADR 0003).
+  You MAY call the Caido MCP `send_request` to replay a request **only if its
+  method is GET**, and only through the operator's confirmation prompt — the human
+  approves every send. You MUST NOT `send_request` any state-changing method
+  (POST/PUT/PATCH/DELETE); stage those (`create_replay_session`) for the operator
+  to fire by hand. You MUST NOT call `run_workflow` or any other transmit tool.
+  drift does not enforce the method — **you** must confirm it's a GET before
+  sending, and when unsure, stage instead of send. See `docs/caido-mcp-setup.md`.
 - **Scope + severity + rules** — in-scope only; respect `max_severity`, required
   UA, rate posture; no brute-force/DoS where excluded.
 - **Non-destructive proofs** — boolean/time/OAST over data-changing payloads;
